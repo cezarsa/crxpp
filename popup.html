@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    input {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input.position {
+      margin-left: 2px;
+      width: 50px;
+    }
+  </style>
+</head>
+<body>
+  <input id="image_input" type="file" name="media" accept="image/*"/>
+  <input type="text" id="x" class="position" value="0" />
+  <input type="text" id="y" class="position" value="0" />
+  <input type="text" id="z" class="position" value="0" />
+  <input type="checkbox" id="enabled" />
+    
+  <script>
+    var backgroundPage = chrome.extension.getBackgroundPage();
+    var fileInput = document.getElementById('image_input');
+    var posXEl = document.getElementById('x');
+    var posYEl = document.getElementById('y');
+    var posZEl = document.getElementById('z');
+    var check = document.getElementById('enabled');
+
+    var pageData = backgroundPage.getData();
+    if(pageData) {
+      posXEl.value = pageData.x;
+      posYEl.value = pageData.y;
+      posZEl.value = pageData.z;
+      enabled.checked = 'checked';
+    }
+
+    fileInput.addEventListener('change', function() {
+      var file = fileInput.files[0];
+      if(!file) {
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function() {
+        backgroundPage.updateImg(posXEl.value, posYEl.value, posZEl.value, reader.result);
+        enabled.checked = 'checked';
+      };
+      reader.readAsBinaryString(file);
+    }, false);
+
+
+    var onChangePos = function() {
+      backgroundPage.updateImg(posXEl.value, posYEl.value, posZEl.value);
+    };
+    var positionEls = document.getElementsByClassName('position')
+    for(var i = 0, len = positionEls.length; i < len; ++i) {
+      positionEls[i].addEventListener('keyup', onChangePos, false);
+    }
+    
+    check.addEventListener('click', function() {
+      if(!enabled.checked) {
+        backgroundPage.clear();
+      }
+    }, false);
+  </script>
+</body>
+</html>

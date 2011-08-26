@@ -1,0 +1,23 @@
+{
+  "name": "CrxPP",
+  "version": "1.0",
+  "description": "The idea is the same as the one behind the Pixel Perfect extension for Firefox.",
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_title": "CrxPP"
+  },
+  "background_page": "background.html",
+  "permissions": [
+    "tabs",
+    "http://*/*",
+    "https://*/*",
+    "unlimitedStorage"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*"],
+      "js": ["inject.js"]
+    }
+  ],
+  "update_url": "http://clients2.google.com/service/update2/crx"
+}
