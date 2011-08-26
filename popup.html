@@ -1,67 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <style>
-    input {
-      display: block;
-      margin-bottom: 5px;
-    }
-    input.position {
-      margin-left: 2px;
-      width: 50px;
-    }
-  </style>
+  <link rel="stylesheet" href="popup.css" type="text/css" media="screen" />
 </head>
 <body>
   <input id="image_input" type="file" name="media" accept="image/*"/>
-  <input type="text" id="x" class="position" value="0" />
-  <input type="text" id="y" class="position" value="0" />
-  <input type="text" id="z" class="position" value="0" />
+  <label for="x">X:</label>
+  <input type="text" id="x" value="0" />
+
+  <label for="y">Y:</label>
+  <input type="text" id="y" value="0" />
+
+  <label for="z">Z:</label>
+  <input type="text" id="z" value="10" />
+
+  <label for="enabled">Enabled:</label>
   <input type="checkbox" id="enabled" />
     
   <script>
     var backgroundPage = chrome.extension.getBackgroundPage();
-    var fileInput = document.getElementById('image_input');
-    var posXEl = document.getElementById('x');
-    var posYEl = document.getElementById('y');
-    var posZEl = document.getElementById('z');
-    var check = document.getElementById('enabled');
 
-    var pageData = backgroundPage.getData();
-    if(pageData) {
-      posXEl.value = pageData.x;
-      posYEl.value = pageData.y;
-      posZEl.value = pageData.z;
-      enabled.checked = 'checked';
-    }
+    var searchTerm = document.location.search;
+    var tabId = searchTerm.substring(1, searchTerm.length);
+    var elements = Array.prototype.slice.call(document.querySelectorAll('input'));
 
-    fileInput.addEventListener('change', function() {
-      var file = fileInput.files[0];
-      if(!file) {
+    var initializeData = function() {
+      var currentData = backgroundPage.getData(tabId);
+      if(!currentData) {
         return;
       }
-      var reader = new FileReader();
-      reader.onload = function() {
-        backgroundPage.updateImg(posXEl.value, posYEl.value, posZEl.value, reader.result);
-        enabled.checked = 'checked';
-      };
-      reader.readAsBinaryString(file);
-    }, false);
-
-
-    var onChangePos = function() {
-      backgroundPage.updateImg(posXEl.value, posYEl.value, posZEl.value);
+      elements.forEach(function(element) {
+        if(element.type == 'text') {
+          element.value = currentData[element.id];
+        } else if(element.type == 'checkbox') {
+          element.checked = currentData[element.id];
+        }
+      });
     };
-    var positionEls = document.getElementsByClassName('position')
-    for(var i = 0, len = positionEls.length; i < len; ++i) {
-      positionEls[i].addEventListener('keyup', onChangePos, false);
-    }
-    
-    check.addEventListener('click', function() {
-      if(!enabled.checked) {
-        backgroundPage.clear();
+
+    var updateElements = function(imgData) {
+      var formData = {};
+      elements.forEach(function(element) {
+        if(element.type == 'text') {
+          formData[element.id] = element.value;
+        } else if(element.type == 'checkbox') {
+          formData[element.id] = element.checked;
+        }
+      });
+      if(imgData) {
+        formData['imgData'] = imgData;
       }
-    }, false);
+      formData['tabId'] = tabId;
+      backgroundPage.updateImg(formData);
+    };
+
+    var onFormChange = function(e) {
+      if(e.type == 'change') {
+        var file = e.target.files[0];
+        if(!file) {
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function() {
+          enabled.checked = 'checked';
+          updateElements(reader.result);
+        };
+        reader.readAsBinaryString(file);
+      } else {
+        updateElements();
+      }
+    };
+
+    initializeData();
+    elements.forEach(function(element) {
+      var eventType;
+      if(element.type == 'text') {
+        eventType = 'keyup';
+      } else if(element.type == 'file') {
+        eventType = 'change';
+      } else if(element.type == 'checkbox') {
+        eventType = 'click';
+      }
+      element.addEventListener(eventType, onFormChange, false);
+    });
   </script>
 </body>
 </html>

@@ -1,0 +1,31 @@
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 11px;
+}
+
+label {
+  float: left;
+  display: block;
+  padding-top: 5px;
+}
+
+input {
+  display: block;
+  margin-top: 5px;
+}
+
+input:not([type="file"]) {
+  margin-left: 60px;
+}
+
+input[type="text"] {
+  width: 30px;
+}
+
+input[type="checkbox"] {
+  margin-top: 8px;
+}
+
+input[type="file"] {
+  margin-bottom: 10px;
+}

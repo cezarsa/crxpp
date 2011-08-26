@@ -2,42 +2,35 @@
 <html>
 <body>
 <script>
-var lastTab = null;
 chrome.browserAction.onClicked.addListener(function(tab) {
-  lastTab = tab;
-  window.open(chrome.extension.getURL('popup.html'), 'crxpp_popup', 'width=300,height=200,location=no,menubar=no,resizable=yes,status=no,titlebar=yes,toolbar=no');
+  window.open(chrome.extension.getURL('popup.html?' + tab.id), 'crxpp_popup', 'width=300,height=200,location=no,menubar=no,resizable=yes,status=no,titlebar=yes,toolbar=no');
 });
 
 var allData = {};
-function updateImg(x, y, z, imgData) {
-  var pageData = allData[lastTab.url];
-  if(!pageData) {
-    pageData = allData[lastTab.url] = {};
-  }
-  if(imgData) {
-    pageData.imgData = imgData;
-  }
-  pageData.x = parseInt(x, 10) || 0;
-  pageData.y = parseInt(y, 10) || 0;
-  pageData.z = parseInt(z, 10) || 0;
 
-  chrome.tabs.sendRequest(lastTab.id, {
+var updateImg = function(formData) {
+  var pageData = allData[formData.tabId];
+  if(!pageData) {
+    pageData = allData[formData.tabId] = {};
+  }
+
+  if(formData.imgData) {
+    pageData.imgData = formData.imgData;
+  }
+
+  pageData.x = parseInt(formData.x, 10) || 0;
+  pageData.y = parseInt(formData.y, 10) || 0;
+  pageData.z = parseInt(formData.z, 10) || 0;
+  pageData.enabled = formData.enabled;
+
+  chrome.tabs.sendRequest(parseInt(formData.tabId, 10), {
     action: 'update',
-    url: lastTab.url,
     pageData: pageData
   });
-}
+};
 
-function clear() {
-  delete allData[lastTab.url];
-  chrome.tabs.sendRequest(lastTab.id, {
-    action: 'clear',
-    url: lastTab.url
-  });
-}
-
-function getData() {
-  return allData[lastTab.url];
+function getData(tabId) {
+  return allData[tabId];
 }
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
@@ -50,7 +43,6 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
         if(tabs[i].url == request.url) {
           chrome.tabs.sendRequest(tabs[i].id, {
             action: 'update',
-            url: request.url,
             pageData: allData[request.url]
           });
           break;

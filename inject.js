@@ -5,18 +5,17 @@ window.BlobBuilder = window.BlobBuilder || window.MozBlobBuilder || window.WebKi
 var imgid = 'crxpp_overlay_img';
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   var overlayImg = document.getElementById(imgid);
-  if(request.action == 'clear') {
+  if(request.action != 'update') {
+    return;
+  }
+
+  if(!request.pageData.enabled) {
     if(overlayImg) {
       overlayImg.parentNode.removeChild(overlayImg);
     }
     return;
   }
-  if(request.action != 'update') {
-    return;
-  }
-  if(request.url != window.location.href) {
-    return;
-  }
+
   if(!overlayImg) {
     overlayImg = document.createElement('img');
     overlayImg.id = imgid;
@@ -24,9 +23,9 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
     overlayImg.style.opacity = '0.5';
     document.body.appendChild(overlayImg);
   }
-  
+
   window.requestFileSystem(window.TEMPORARY, 5*1024*1024, function(fs) {
-    fs.root.getFile('crxpp_overlay_img', {create: true}, function(fileEntry) {
+    fs.root.getFile(imgid, {create: true}, function(fileEntry) {
       fileEntry.createWriter(function(fileWriter) {
         fileWriter.onwriteend = function(e) {
           overlayImg.src = fileEntry.toURL();
@@ -42,7 +41,7 @@ chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
       });
     }, errorHandler);
   }, errorHandler);
-  
+
   overlayImg.style.zIndex = request.pageData.z + '';
   overlayImg.style.left = request.pageData.x + 'px';
   overlayImg.style.top = request.pageData.y + 'px';
