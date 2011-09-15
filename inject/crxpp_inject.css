@@ -1,0 +1,14 @@
+#crxpp_inject.crxpp_inject {
+    position: fixed;
+    z-index: 9999999999999;
+    background: white;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0px !important;
+    padding: 2px !important;
+}
+
+#crxpp_inject.crxpp_inject * {
+    font-size: 10px !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+}

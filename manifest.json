@@ -15,8 +15,9 @@
   ],
   "content_scripts": [
     {
-      "matches": ["http://*/*"],
-      "js": ["inject.js"]
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["inject/crxpp_inject.js"],
+      "css": ["inject/crxpp_inject.css"]
     }
   ],
   "update_url": "http://clients2.google.com/service/update2/crx"

@@ -3,53 +3,20 @@
 <body>
 <script>
 chrome.browserAction.onClicked.addListener(function(tab) {
-  window.open(chrome.extension.getURL('popup.html?' + tab.id), 'crxpp_popup', 'width=300,height=200,location=no,menubar=no,resizable=yes,status=no,titlebar=yes,toolbar=no');
+    chrome.tabs.sendRequest(tab.id, {
+        action: 'toggle',
+        pageData: {
+            tabId: tab.id
+        } // TODO: Send saved data
+    });
 });
 
-var allData = {};
-
-var updateImg = function(formData) {
-  var pageData = allData[formData.tabId];
-  if(!pageData) {
-    pageData = allData[formData.tabId] = {};
-  }
-
-  if(formData.imgData) {
-    pageData.imgData = formData.imgData;
-  }
-
-  pageData.x = parseInt(formData.x, 10) || 0;
-  pageData.y = parseInt(formData.y, 10) || 0;
-  pageData.z = parseInt(formData.z, 10) || 0;
-  pageData.enabled = formData.enabled;
-
-  chrome.tabs.sendRequest(parseInt(formData.tabId, 10), {
-    action: 'update',
-    pageData: pageData
-  });
-};
-
-function getData(tabId) {
-  return allData[tabId];
-}
-
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
-  if(request.action != 'request') {
-    return;
-  }
-  if(allData[request.url]) {
-    chrome.tabs.getAllInWindow(null, function(tabs) {
-      for(var i = 0, len = tabs.length; i < len; ++i) {
-        if(tabs[i].url == request.url) {
-          chrome.tabs.sendRequest(tabs[i].id, {
-            action: 'update',
-            pageData: allData[request.url]
-          });
-          break;
-        }
-      }
-    });
-  }
+    if (request.action == 'save') {
+        // TODO: Save state
+    } else if (request.action == 'request') {
+        // TODO: Answer saved data
+    }
 });
 </script>
 </body>
