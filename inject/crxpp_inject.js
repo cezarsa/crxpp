@@ -8,7 +8,6 @@ var Crxpp = (function() {
     };
 
     var ctor = function() {
-        this.visible = false;
         this.pageData = null;
         this.overlayImageId = 'crxpp_overlay_img';
         this._bindEvents();
@@ -17,13 +16,12 @@ var Crxpp = (function() {
 
     ctor.prototype = {
         _bindEvents: function() {
-            var self = this;
             chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
                 if (request.action == 'toggle') {
-                    self.pageData = request.pageData;
-                    self.toggle();
+                    this.pageData = request.pageData;
+                    this.toggle();
                 }
-            });
+            }.bind(this));
         },
 
         _checkEnabled: function() {
@@ -36,33 +34,29 @@ var Crxpp = (function() {
         toggle: function() {
             if (!this.element) {
                 this._initDOM();
+                return;
             }
-            if (this.visible) {
-                this.visible = false;
-                this.element.style.display = 'none';
-            } else {
-                this.visible = true;
+            if (this.pageData.visible) {
                 this.element.style.display = '';
+            } else {
+                this.element.style.display = 'none';
             }
         },
 
         renderImage: function(formData) {
-            var imgId = this.overlayImageId;
-            var overlayImg = document.getElementById(imgId);
-
-            if (overlayImg) {
-                if (formData.enabled) {
-                    overlayImg.style.display = '';
-                } else {
-                    overlayImg.style.display = 'none';
-                }
-            }
+            var imgId = this.overlayImageId,
+                overlayImg = document.getElementById(imgId);
 
             if (!overlayImg) {
                 overlayImg = document.createElement('img');
                 overlayImg.id = imgId;
                 overlayImg.style.position = 'absolute';
                 document.body.appendChild(overlayImg);
+            }
+            if (!formData.enabled) {
+                overlayImg.style.display = 'none';
+            } else {
+                overlayImg.style.display = '';
             }
 
             overlayImg.style.zIndex = formData.z;
@@ -122,38 +116,44 @@ var Crxpp = (function() {
 
         _initDOMEvents: function() {
             var elements = Array.prototype.slice.call(this.element.querySelectorAll('input')),
-                textElements = Array.prototype.slice.call(this.element.querySelectorAll('input[type="text"]')),
-                self = this;
+                textElements = Array.prototype.slice.call(this.element.querySelectorAll('input[type="text"]'));
 
             var initializeData = function() {
-                /*elements.forEach(function(element) {
-                    if (element.type == 'text') {
-                        element.value = self.pageData[element.id];
-                    } else if (element.type == 'checkbox') {
-                        element.checked = self.pageData[element.id];
+                elements.forEach(function(element) {
+                    var data = this.pageData[element.id];
+                    if (data === undefined) {
+                        return true;
                     }
-                });*/
-            };
+                    if (element.type == 'text') {
+                        element.value = data;
+                    } else if (element.type == 'checkbox') {
+                        element.checked = data;
+                    }
+                }.bind(this));
+                if (this.pageData.imgData) {
+                    updateElements(this.pageData.imgData);
+                }
+            }.bind(this);
 
             var updateElements = function(imgData) {
-                var formData = {};
                 elements.forEach(function(element) {
                     if (element.type == 'text') {
-                        formData[element.id] = element.value;
+                        this.pageData[element.id] = element.value;
                     } else if (element.type == 'checkbox') {
-                        formData[element.id] = element.checked;
+                        this.pageData[element.id] = element.checked;
                     }
-                });
+                }.bind(this));
                 if (imgData) {
-                    formData.imgData = imgData;
+                    this.pageData.imgData = imgData;
+                } else {
+                    delete this.pageData.imgData;
                 }
-                formData.tabId = self.pageData.tabId;
                 chrome.extension.sendRequest({
                     action: 'save',
-                    formData: formData
+                    pageData: this.pageData
                 });
-                self.renderImage(formData);
-            };
+                this.renderImage(this.pageData);
+            }.bind(this);
 
             var onFormChange = function(e) {
                 if (e.type == 'change') {
@@ -163,7 +163,7 @@ var Crxpp = (function() {
                     }
                     var reader = new FileReader();
                     reader.onload = function() {
-                        enabled.checked = 'checked';
+                        enabled.checked = true;
                         updateElements(reader.result);
                     };
                     reader.readAsBinaryString(file);
@@ -188,12 +188,13 @@ var Crxpp = (function() {
                 element.addEventListener(eventType, onFormChange, false);
             });
 
-            var pastTimeout = null;
             textElements.forEach(function(element) {
                 element.addEventListener('keydown', function(e) {
-                    var intValue = parseInt(element.value, 10),
-                        increment = 0;
-                    if (isNaN(intValue)) {
+                    var floatValue = parseFloat(element.value, 10),
+                        isDecimal = floatValue >= 0 && floatValue <= 1,
+                        increment = 0,
+                        newValue;
+                    if (isNaN(floatValue)) {
                         return true;
                     }
                     if (e.keyCode == 38) {
@@ -202,7 +203,12 @@ var Crxpp = (function() {
                         increment = -1;
                     }
                     if (increment != 0) {
-                        element.value = intValue + increment;
+                        if (isDecimal) {
+                            newValue = (floatValue + (increment / 10)).toFixed(1);
+                        } else {
+                            newValue = (floatValue + increment).toFixed(0);
+                        }
+                        element.value = newValue;
                         updateElements();
                     }
                 }, false);
