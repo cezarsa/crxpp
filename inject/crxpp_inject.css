@@ -8,27 +8,31 @@
     padding: 3px !important;
     border-radius: 0 0 3px 0;
     font: 10px Arial, Helvetica, sans-serif !important;
+    background-color: rgba(255, 255, 255,0.8);
+    background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.03) 2px, transparent 2px);
+    background-size: 0 3px;
+    box-shadow: 1px 1px 3px 0 rgba(0, 0, 0, 0.5);
 }
 
 #crxpp_inject.crxpp_inject * {
     font: inherit !important;
     padding: 0 !important;
-	margin: 0 !important;
+    margin: 0 !important;
 }
 
 #crxpp_inject.crxpp_inject input {
-	margin-right: 10px !important;
-	border: 0 !important;
-	padding: 3px !important;
-	background: transparent !important;
+    margin-right: 10px !important;
+    border: 0 !important;
+    padding: 3px !important;
+    background: transparent !important;
 }
 
 #crxpp_inject.crxpp_inject input[type="text"] {
-	width: 35px;
-	border: 1px solid #333 !important;
-	border-radius: 2px;
+    width: 35px;
+    border: 1px solid #333 !important;
+    border-radius: 2px;
 }
 
 #crxpp_overlay_img {
-	cursor: move;
+    cursor: move;
 }
