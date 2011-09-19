@@ -122,19 +122,19 @@ var Crxpp = (function() {
         _initDOM: function() {
             var html = [
                 '<input name="image_input" type="file" name="media" accept="image/*"/>',
-                '<label for="x">X:</label>',
+                '<label for="x">x:</label>',
                 '<input type="text" name="x" value="0" />',
 
-                '<label for="y">Y:</label>',
+                '<label for="y">y:</label>',
                 '<input type="text" name="y" value="0" />',
 
-                '<label for="z">Z:</label>',
+                '<label for="z">z:</label>',
                 '<input type="text" name="z" value="9999" />',
 
                 '<label for="opacity">opacity:</label>',
                 '<input type="text" name="opacity" value="0.5" />',
 
-                '<label for="enabled">Enabled:</label>',
+                '<label for="enabled">enabled:</label>',
                 '<input type="checkbox" name="enabled" />'
             ];
             var topDiv = document.createElement('div');
