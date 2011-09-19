@@ -51,6 +51,7 @@ var Crxpp = (function() {
                 overlayImg = document.createElement('img');
                 overlayImg.id = imgId;
                 overlayImg.style.position = 'absolute';
+                this._initOverlayEvents(overlayImg);
                 document.body.appendChild(overlayImg);
             }
             if (!formData.enabled) {
@@ -88,39 +89,91 @@ var Crxpp = (function() {
             }, errorHandler);
         },
 
+        _initOverlayEvents: function(imgEl) {
+            var diffX = 0, diffY = 0,
+                xInput = this.element.querySelectorAll('[name="x"]')[0],
+                yInput = this.element.querySelectorAll('[name="y"]')[0];
+
+            var onMouseMove = function(e) {
+                imgEl.style.left = (e.clientX - diffX) + 'px';
+                imgEl.style.top = (e.clientY - diffY) + 'px';
+            }.bind(this);
+
+            var onMouseDown = function(e) {
+                var imgX = parseInt(imgEl.style.left), imgY = parseInt(imgEl.style.top);
+                diffX = e.clientX - imgX;
+                diffY = e.clientY - imgY;
+                e.preventDefault();
+                imgEl.addEventListener('mouseup', onMouseUp, false);
+                imgEl.addEventListener('mousemove', onMouseMove, false);
+            }.bind(this);
+
+            var onMouseUp = function(e) {
+                xInput.value = parseInt(imgEl.style.left);
+                yInput.value = parseInt(imgEl.style.top);
+                this._updateFormAndRender();
+                imgEl.removeEventListener('mouseup', onMouseUp, false);
+                imgEl.removeEventListener('mousemove', onMouseMove, false);
+            }.bind(this);
+
+            imgEl.addEventListener('mousedown', onMouseDown, false);
+        },
+
         _initDOM: function() {
             var html = [
-                '<input id="image_input" type="file" name="media" accept="image/*"/>',
+                '<input name="image_input" type="file" name="media" accept="image/*"/>',
                 '<label for="x">X:</label>',
-                '<input type="text" id="x" value="0" />',
+                '<input type="text" name="x" value="0" />',
 
                 '<label for="y">Y:</label>',
-                '<input type="text" id="y" value="0" />',
+                '<input type="text" name="y" value="0" />',
 
                 '<label for="z">Z:</label>',
-                '<input type="text" id="z" value="9999" />',
+                '<input type="text" name="z" value="9999" />',
 
                 '<label for="opacity">opacity:</label>',
-                '<input type="text" id="opacity" value="0.5" />',
+                '<input type="text" name="opacity" value="0.5" />',
 
                 '<label for="enabled">Enabled:</label>',
-                '<input type="checkbox" id="enabled" />'
+                '<input type="checkbox" name="enabled" />'
             ];
             var topDiv = document.createElement('div');
             topDiv.id = 'crxpp_inject';
             topDiv.className = 'crxpp_inject';
             topDiv.innerHTML = html.join('');
             this.element = document.body.insertBefore(topDiv, document.body.firstChild);
+            this.formElements = Array.prototype.slice.call(this.element.querySelectorAll('input'));
             this._initDOMEvents();
         },
 
+        _updateFormAndRender: function(imgData){
+            this.formElements.forEach(function(element) {
+                if (element.type == 'text') {
+                    this.pageData[element.name] = element.value;
+                } else if (element.type == 'checkbox') {
+                    this.pageData[element.name] = element.checked;
+                }
+            }.bind(this));
+            if (imgData) {
+                this.pageData.imgData = imgData;
+            } else {
+                delete this.pageData.imgData;
+            }
+            chrome.extension.sendRequest({
+                action: 'save',
+                pageData: this.pageData
+            });
+            this.renderImage(this.pageData);
+        },
+
         _initDOMEvents: function() {
-            var elements = Array.prototype.slice.call(this.element.querySelectorAll('input')),
-                textElements = Array.prototype.slice.call(this.element.querySelectorAll('input[type="text"]'));
+            var textElements = Array.prototype.slice.call(this.element.querySelectorAll('input[type="text"]')),
+                enabledEl = this.element.querySelectorAll('[name="enabled"]')[0],
+                updateForm = this._updateFormAndRender.bind(this);
 
             var initializeData = function() {
-                elements.forEach(function(element) {
-                    var data = this.pageData[element.id];
+                this.formElements.forEach(function(element) {
+                    var data = this.pageData[element.name];
                     if (data === undefined) {
                         return true;
                     }
@@ -131,28 +184,8 @@ var Crxpp = (function() {
                     }
                 }.bind(this));
                 if (this.pageData.imgData) {
-                    updateElements(this.pageData.imgData);
+                    this._updateFormAndRender(this.pageData.imgData);
                 }
-            }.bind(this);
-
-            var updateElements = function(imgData) {
-                elements.forEach(function(element) {
-                    if (element.type == 'text') {
-                        this.pageData[element.id] = element.value;
-                    } else if (element.type == 'checkbox') {
-                        this.pageData[element.id] = element.checked;
-                    }
-                }.bind(this));
-                if (imgData) {
-                    this.pageData.imgData = imgData;
-                } else {
-                    delete this.pageData.imgData;
-                }
-                chrome.extension.sendRequest({
-                    action: 'save',
-                    pageData: this.pageData
-                });
-                this.renderImage(this.pageData);
             }.bind(this);
 
             var onFormChange = function(e) {
@@ -163,20 +196,20 @@ var Crxpp = (function() {
                     }
                     var reader = new FileReader();
                     reader.onload = function() {
-                        enabled.checked = true;
-                        updateElements(reader.result);
+                        enabledEl.checked = true;
+                        updateForm(reader.result);
                     };
                     reader.readAsBinaryString(file);
                 } else {
                     if (e.keyCode && e.keyCode == 38 || e.keyCode == 40) {
                         return;
                     }
-                    updateElements();
+                    updateForm();
                 }
             };
 
             initializeData();
-            elements.forEach(function(element) {
+            this.formElements.forEach(function(element) {
                 var eventType;
                 if (element.type == 'text') {
                     eventType = 'keyup';
@@ -209,7 +242,7 @@ var Crxpp = (function() {
                             newValue = (floatValue + increment).toFixed(0);
                         }
                         element.value = newValue;
-                        updateElements();
+                        updateForm();
                     }
                 }, false);
             });
