@@ -17,7 +17,7 @@ var Crxpp = (function() {
     ctor.prototype = {
         _bindEvents: function() {
             chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
-                if (request.action == 'toggle') {
+                if (request.action === 'toggle') {
                     this.pageData = request.pageData;
                     this.toggle();
                 }
@@ -36,11 +36,7 @@ var Crxpp = (function() {
                 this._initDOM();
                 return;
             }
-            if (this.pageData.visible) {
-                this.element.style.display = '';
-            } else {
-                this.element.style.display = 'none';
-            }
+            this.element.style.display = (this.pageData.visible) ? '' : 'none';
         },
 
         renderImage: function(formData) {
@@ -55,11 +51,8 @@ var Crxpp = (function() {
                 this._initOverlayEvents(overlayImg);
                 document.body.appendChild(overlayImg);
             }
-            if (!formData.enabled) {
-                overlayImg.style.display = 'none';
-            } else {
-                overlayImg.style.display = '';
-            }
+
+            overlayImg.style.display = (formData.enabled) ? '' : 'none';
 
             overlayImg.style.zIndex = formData.z;
             overlayImg.style.left = formData.x + 'px';
@@ -212,16 +205,14 @@ var Crxpp = (function() {
             };
 
             initializeData();
+
+            var elementToEventMap = {
+                text: 'keyup',
+                file: 'change',
+                checkbox: 'click'
+            };
             this.formElements.forEach(function(element) {
-                var eventType;
-                if (element.type == 'text') {
-                    eventType = 'keyup';
-                } else if (element.type == 'file') {
-                    eventType = 'change';
-                } else if (element.type == 'checkbox') {
-                    eventType = 'click';
-                }
-                element.addEventListener(eventType, onFormChange, false);
+                element.addEventListener(elementToEventMap[element.type], onFormChange, false);
             });
 
             textElements.forEach(function(element) {
