@@ -4,7 +4,7 @@ window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder;
 var Crxpp = (function() {
 
     var errorHandler = function(e) {
-        console.log(e);
+        (console.error || console.log)(e);
     };
 
     var ctor = function() {
@@ -51,6 +51,7 @@ var Crxpp = (function() {
                 overlayImg = document.createElement('img');
                 overlayImg.id = imgId;
                 overlayImg.style.position = 'absolute';
+                overlayImg.style.pointerEvents = 'none';
                 this._initOverlayEvents(overlayImg);
                 document.body.appendChild(overlayImg);
             }
@@ -64,6 +65,8 @@ var Crxpp = (function() {
             overlayImg.style.left = formData.x + 'px';
             overlayImg.style.top = formData.y + 'px';
             overlayImg.style.opacity = formData.opacity;
+
+            this.overlayImg = overlayImg;
 
             if (!formData.imgData) {
                 return;
@@ -246,6 +249,19 @@ var Crxpp = (function() {
                     }
                 }, false);
             });
+
+            var activateDrag = {shift: 1, meta: 1};
+
+            document.addEventListener('keydown', function(e) {
+                if (activateDrag[e.keyIdentifier.toLowerCase()]) {
+                    this.overlayImg.style.pointerEvents = '';
+                }
+            }.bind(this), false);
+            document.addEventListener('keyup', function(e) {
+                if (activateDrag[e.keyIdentifier.toLowerCase()]) {
+                    this.overlayImg.style.pointerEvents = 'none';
+                }
+            }.bind(this), false);
         }
     };
 
