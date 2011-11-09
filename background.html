@@ -17,8 +17,8 @@ var storage = {
     }
 };
 
-var sendData = function(tabId, opts) {
-    var tabData = storage.get(tabId) || {tabId: tabId};
+var sendData = function(tab, opts) {
+    var tabData = storage.get(tab.id) || {tabId: tab.id};
 
     if (opts && opts.toggle) {
         tabData.visible = !tabData.visible;
@@ -27,30 +27,35 @@ var sendData = function(tabId, opts) {
     }
 
     storage.save(tabData);
-    chrome.tabs.sendRequest(tabId, {
+    chrome.tabs.sendRequest(tab.id, {
         action: 'toggle',
         pageData: tabData
     });
 };
 
-chrome.browserAction.onClicked.addListener(function(tab) {
-    sendData(tab.id, {toggle: true});
-});
 
-chrome.extension.onRequest.addListener(function(request) {
-    switch (request.action) {
-
-    case 'save':
-        storage.save(request.pageData);
-        break;
-
-    case 'request':
-        chrome.tabs.getSelected(function(tab) {
-            sendData(tab.id);
-        });
-
+var communication = {
+    extensionIconClick: function(tab) {
+        sendData(tab, {toggle: true});
+    },
+    injectedScriptRequest: function(request) {
+        communication.actions[request.action](request);
+    },
+    actions: {
+        save: function(request) {
+            storage.save(request.pageData);
+        },
+        request: function() {
+            chrome.tabs.getSelected(sendData);
+        }
     }
-});
+};
+
+// on extensions icon click
+chrome.browserAction.onClicked.addListener(communication.extensionIconClick);
+
+// when the inject script sends a request
+chrome.extension.onRequest.addListener(communication.injectedScriptRequest);
 
 </script>
 </body>
