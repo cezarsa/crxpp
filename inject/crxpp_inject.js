@@ -1,30 +1,26 @@
-window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-window.BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder;
+(function() {
 
-var Crxpp = (function() {
-
+    var requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+    var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder;
+    var slice = Array.prototype.slice;
     var errorHandler = function(e) {
         (console.error || console.log)(e);
     };
 
-    var ctor = function() {
-        this.pageData = null;
-        this.overlayImageId = 'crxpp_overlay_img';
-        this._bindEvents();
+    var PixelCheck = function() {
         this._checkEnabled();
     };
 
-    ctor.prototype = {
-        _bindEvents: function() {
-            chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
-                if (request.action === 'toggle') {
-                    this.pageData = request.pageData;
-                    this.toggle();
-                }
-            }.bind(this));
+    PixelCheck.prototype = {
+        onRequest: function(request) {
+            if (request.action === 'toggle') {
+                this.pageData = request.pageData;
+                this.toggle();
+            }
         },
 
         _checkEnabled: function() {
+            // usar o tabid para ver qual a tab chrome.tabs.getCurrent(callback(tab)); tab.id
             chrome.extension.sendRequest({
                 action: 'request',
                 url: window.location.href
@@ -40,49 +36,52 @@ var Crxpp = (function() {
         },
 
         renderImage: function(formData) {
-            var imgId = this.overlayImageId,
-                overlayImg = document.getElementById(imgId);
-
-            if (!overlayImg) {
-                overlayImg = document.createElement('img');
-                overlayImg.id = imgId;
-                overlayImg.style.position = 'absolute';
-                overlayImg.style.pointerEvents = 'none';
-                this._initOverlayEvents(overlayImg);
-                document.body.appendChild(overlayImg);
+            if (!this.overlayImg) {
+                this.overlayImg = document.createElement('img');
+                this.overlayImg.id = 'crxpp_overlay_img';
+                this.overlayImg.style.position = 'absolute';
+                this.overlayImg.style.pointerEvents = 'none';
+                this._initOverlayEvents(this.overlayImg);
+                document.body.appendChild(this.overlayImg);
             }
 
-            overlayImg.style.display = (formData.enabled) ? '' : 'none';
-
-            overlayImg.style.zIndex = formData.z;
-            overlayImg.style.left = formData.x + 'px';
-            overlayImg.style.top = formData.y + 'px';
-            overlayImg.style.opacity = formData.opacity;
-
-            this.overlayImg = overlayImg;
+            this._updateImage(formData);
 
             if (!formData.imgData) {
                 return;
             }
-            window.requestFileSystem(window.TEMPORARY, 5 * 1024 * 1024, function(fs) {
-                fs.root.getFile(imgId, {
+
+            requestFileSystem(window.TEMPORARY, 5 * 1024 * 1024, function(fs) {
+                fs.root.getFile(this.overlayImg.id, {
                     create: true
                 }, function(fileEntry) {
                     fileEntry.createWriter(function(fileWriter) {
-                        fileWriter.onwriteend = function(e) {
-                            overlayImg.src = fileEntry.toURL();
-                        };
-                        var bb = new BlobBuilder();
+
                         var data = formData.imgData;
+                        var bb = new BlobBuilder();
                         var byteArray = new Uint8Array(data.length);
-                        for (var i = 0; i < data.length; i++) {
+
+                        for (var i = 0, dataLength = data.length; i < dataLength; i++) {
                             byteArray[i] = data.charCodeAt(i) & 0xff;
                         }
+
                         bb.append(byteArray.buffer);
+                        fileWriter.onwriteend = function(e) {
+                            this.overlayImg.src = fileEntry.toURL();
+                        }.bind(this);
                         fileWriter.write(bb.getBlob());
-                    });
-                }, errorHandler);
-            }, errorHandler);
+
+                    }.bind(this));
+                }.bind(this), errorHandler);
+            }.bind(this), errorHandler);
+        },
+
+        _updateImage: function(formData) {
+            this.overlayImg.style.display = (formData.enabled) ? '' : 'none';
+            this.overlayImg.style.zIndex = formData.z;
+            this.overlayImg.style.left = formData.x + 'px';
+            this.overlayImg.style.top = formData.y + 'px';
+            this.overlayImg.style.opacity = formData.opacity;
         },
 
         _initOverlayEvents: function(imgEl) {
@@ -133,12 +132,13 @@ var Crxpp = (function() {
                 '<label for="enabled">enabled:</label>',
                 '<input type="checkbox" name="enabled" />'
             ];
+
             var topDiv = document.createElement('div');
             topDiv.id = 'crxpp_inject';
             topDiv.className = 'crxpp_inject';
             topDiv.innerHTML = html.join('');
             this.element = document.body.insertBefore(topDiv, document.body.firstChild);
-            this.formElements = Array.prototype.slice.call(this.element.querySelectorAll('input'));
+            this.formElements = slice.call(this.element.querySelectorAll('input'));
             this._initDOMEvents();
         },
 
@@ -256,7 +256,8 @@ var Crxpp = (function() {
         }
     };
 
-    return ctor;
+    var pixelCheck = new PixelCheck();
+    chrome.extension.onRequest.addListener(pixelCheck.onRequest.bind(pixelCheck));
+
 })();
 
-new Crxpp();

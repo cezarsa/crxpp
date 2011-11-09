@@ -11,7 +11,7 @@
     background-color: rgba(255, 255, 255,0.8);
     background-image: -webkit-linear-gradient(rgba(0, 0, 0, 0.03) 2px, transparent 2px);
     background-size: 0 3px;
-    box-shadow: 1px 1px 3px 0 rgba(0, 0, 0, 0.5);
+    box-shadow: 1px 1px 2px 0 rgba(0, 0, 0, 0.4);
 }
 
 #crxpp_inject.crxpp_inject * {

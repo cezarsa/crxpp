@@ -2,62 +2,60 @@
 <html>
 <body>
 <script>
-var tabData = {};
 
-var sendData = function(tabId, opts) {
-    if (!opts) {
-        opts = {};
-    }
-    if (opts.toggle === undefined) {
-        opts.toggle = false;
-    }
-
-    var savedPageData = tabData[tabId];
-    if (opts.toggle) {
-        if (!savedPageData) {
-            savedPageData = {};
+var storage = {
+    _storage: {},
+    save: function(data) {
+        var oldData = this.get(data.tabId);
+        if (oldData && !data.imgData) {
+            data.imgData = oldData.imgData;
         }
-        savedPageData.visible = !savedPageData.visible;
-    } else {
-        if (!savedPageData || !savedPageData.visible) {
-            return;
-        }
+        this._storage[data.tabId] = data;
+    },
+    get: function(id) {
+        return this._storage[id];
     }
-
-    savedPageData.tabId = tabId;
-    saveData(savedPageData);
-    chrome.tabs.sendRequest(tabId, {
-        action: 'toggle',
-        pageData: savedPageData
-    });
 };
 
-var saveData = function(data) {
-    var oldData = tabData[data.tabId];
-    if (oldData && !data.imgData) {
-        data.imgData = oldData.imgData;
+var sendData = function(tabId, opts) {
+    var tabData = storage.get(tabId) || {tabId: tabId};
+
+    if (opts && opts.toggle) {
+        tabData.visible = !tabData.visible;
+    } else if (!tabData.visible) {
+        return;
     }
-    tabData[data.tabId] = data;
+
+    storage.save(tabData);
+    chrome.tabs.sendRequest(tabId, {
+        action: 'toggle',
+        pageData: tabData
+    });
 };
 
 chrome.browserAction.onClicked.addListener(function(tab) {
     sendData(tab.id, {toggle: true});
 });
 
-chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
-    if (request.action == 'save') {
-        saveData(request.pageData);
-    } else if (request.action == 'request') {
+chrome.extension.onRequest.addListener(function(request) {
+    switch (request.action) {
+
+    case 'save':
+        storage.save(request.pageData);
+        break;
+
+    case 'request':
         chrome.tabs.getAllInWindow(null, function(tabs) {
-            for (var i = 0, len = tabs.length; i < len; ++i) {
-                if (tabs[i].url == request.url) {
-                    sendData(tabs[i].id);
-                    break;
-                }
-            }
+            tabs.filter(function(tab) {
+                return tab.url === request.url;
+            }).forEach(function(tab) {
+                sendData(tab.id);
+            });
         });
+
     }
 });
+
 </script>
 </body>
 </html>
