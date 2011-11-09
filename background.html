@@ -45,12 +45,8 @@ chrome.extension.onRequest.addListener(function(request) {
         break;
 
     case 'request':
-        chrome.tabs.getAllInWindow(null, function(tabs) {
-            tabs.filter(function(tab) {
-                return tab.url === request.url;
-            }).forEach(function(tab) {
-                sendData(tab.id);
-            });
+        chrome.tabs.getSelected(function(tab) {
+            sendData(tab.id);
         });
 
     }

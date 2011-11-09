@@ -20,11 +20,7 @@
         },
 
         _checkEnabled: function() {
-            // usar o tabid para ver qual a tab chrome.tabs.getCurrent(callback(tab)); tab.id
-            chrome.extension.sendRequest({
-                action: 'request',
-                url: window.location.href
-            });
+            chrome.extension.sendRequest({action: 'request'});
         },
 
         toggle: function() {
