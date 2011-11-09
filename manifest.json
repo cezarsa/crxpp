@@ -2,8 +2,13 @@
   "name": "CrxPP",
   "version": "1.0",
   "description": "The idea is the same as the one behind the Pixel Perfect extension for Firefox.",
+  "icons": {
+    "16":  "icons/icon_16.png",
+    "48":  "icons/icon_48.png",
+    "128": "icons/icon_128.png"
+  },
   "browser_action": {
-    "default_icon": "icon.png",
+    "default_icon": "icons/icon_16.png",
     "default_title": "CrxPP"
   },
   "background_page": "background.html",
