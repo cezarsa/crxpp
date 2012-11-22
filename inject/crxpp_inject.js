@@ -1,7 +1,7 @@
 (function() {
 
     var requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-    var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder;
+    var Blob = window.Blob || window.WebKitBlob;
     var slice = Array.prototype.slice;
     var errorHandler = function(e) {
         (console.error || console.log)(e);
@@ -54,18 +54,17 @@
                     fileEntry.createWriter(function(fileWriter) {
 
                         var data = formData.imgData;
-                        var bb = new BlobBuilder();
                         var byteArray = new Uint8Array(data.length);
 
                         for (var i = 0, dataLength = data.length; i < dataLength; i++) {
                             byteArray[i] = data.charCodeAt(i) & 0xff;
                         }
 
-                        bb.append(byteArray.buffer);
+                        var blob = new Blob([byteArray.buffer]);
                         fileWriter.onwriteend = function(e) {
                             this.overlayImg.src = fileEntry.toURL();
                         }.bind(this);
-                        fileWriter.write(bb.getBlob());
+                        fileWriter.write(blob);
 
                     }.bind(this));
                 }.bind(this), errorHandler);
