@@ -40,6 +40,7 @@
                 this._initOverlayEvents(this.overlayImg);
                 document.body.appendChild(this.overlayImg);
             }
+            this._renderBaselineGrid(formData);
 
             this._updateImage(formData);
 
@@ -77,6 +78,27 @@
             this.overlayImg.style.left = formData.x + 'px';
             this.overlayImg.style.top = formData.y + 'px';
             this.overlayImg.style.opacity = formData.opacity;
+        },
+
+        _renderBaselineGrid: function(formData) {
+            if (!this.overlayGrid) {
+                this.overlayGrid = document.createElement('div');
+                this.overlayGrid.id = 'crxpp_overlay_grid';
+
+                var element, i = 0;
+                for (; i < 1000; ++i) {
+                    element = document.createElement('div');
+                    this.overlayGrid.appendChild(element);
+                }
+
+                document.body.appendChild(this.overlayGrid);
+            }
+
+            this.overlayGrid.style.opacity = formData.opacity;
+            this.overlayGrid.style.display = (formData.grid) ? '' : 'none';
+            this.overlayGrid.style.zIndex = formData.z;
+            this.overlayGrid.style.left = formData.gridx + 'px';
+            this.overlayGrid.style.top = formData.gridy + 'px';
         },
 
         _initOverlayEvents: function(imgEl) {
@@ -125,7 +147,16 @@
                 '<input type="text" name="opacity" value="0.5" />',
 
                 '<label for="enabled">enabled:</label>',
-                '<input type="checkbox" name="enabled" />'
+                '<input type="checkbox" name="enabled" />',
+
+                '<label for="gridx">gridx:</label>',
+                '<input type="text" name="gridx" value="0" />',
+
+                '<label for="gridy">gridy:</label>',
+                '<input type="text" name="gridy" value="0" />',
+
+                '<label for="grid">grid:</label>',
+                '<input type="checkbox" name="grid" />'
             ];
 
             var topDiv = document.createElement('div');
